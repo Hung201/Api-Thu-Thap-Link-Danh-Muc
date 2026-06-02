@@ -26,7 +26,7 @@ export const NON_PRODUCT_LABEL =
 
 /** Slug gợi ý danh mục sản phẩm */
 export const PRODUCT_SLUG_HINT =
-    /(?:san-pham|sản-phẩm|product|dong-san-pham|collection|hang-hoa|danh-muc|category|keo|son|may|dien|thiet-bi|bond|skbond|vat-lieu|vật\s*liệu|op-lat|chong-tham|phu-tro)/i;
+    /(?:san-pham|sản-phẩm|product|dong-san-pham|collection|hang-hoa|danh-muc|category|keo|son|may|dien|thiet-bi|bond|skbond|vat-lieu|vật\s*liệu|op-lat|chong-tham|phu-tro|ngoi|gach|sen-voi)/i;
 
 /** Slug 1 cấp kiểu haditech.com.vn/san-pham-op-lat/ */
 export const FLAT_CATEGORY_SLUG =
@@ -200,7 +200,7 @@ export function isInsideProductBlock($, el) {
 export function isUnderProductMenu($, el) {
     if (isWooCommerceProductCategory($, el)) return true;
 
-    const subMenu = $(el).closest('.dropdown-content, .sub-menu, .submenu, .children, .mega-sub-menu, ul.children');
+    const subMenu = $(el).closest('.dropdown-content, .sub-menu, .submenu, .children, .mega-sub-menu, ul.children, .menu-hover');
     if (subMenu.length) {
         const branch = subMenu.parent().closest('.dropdown, .nav-item, li.menu-item, li.mega-menu-item, li');
         const parentText = branch

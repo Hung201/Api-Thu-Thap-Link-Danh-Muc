@@ -26,6 +26,13 @@ const PRODUCT_DROPDOWN_SELECTORS = [
     '.header-bottom-navigation .dropdown-content a[href]',
     'nav .dropdown-content a[href]',
     '.mash-submenu .dropdown-content a[href]',
+    '.menubar .menu .submenu a[href]',
+    '.menu_desktop .submenu a[href]',
+    '#menu .submenu a[href]',
+    '.menux .submenu a[href]',
+    '.header-menu .menu_holder .item > a.item-cate[href]',
+    '.header-menu .menu_holder .menu-hover a.title-holder[href]',
+    '.header-menu .menu_holder .menu-hover .holder-last a[href]',
 ];
 
 /** Trang chủ block danh mục (theme Lindos / tương tự) */
@@ -99,7 +106,8 @@ export function extractCategoryLinks($, pageUrl, siteHostname, siteOptions = {})
     for (const selector of PRODUCT_DROPDOWN_SELECTORS) {
         $(selector).each((_, el) => {
             if (isInsideProductBlock($, el)) return;
-            if (!isUnderProductMenu($, el)) return;
+            const isKnownCatalogBlock = selector.includes('.header-menu .menu_holder');
+            if (!isKnownCatalogBlock && !isUnderProductMenu($, el)) return;
             addLink($(el).attr('href'), getLinkLabel($, el), { fromProductMenu: true });
         });
     }
