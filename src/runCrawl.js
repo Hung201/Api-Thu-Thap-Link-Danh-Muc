@@ -40,8 +40,10 @@ export async function runCategoryCrawl(rawInput) {
         input.proxyConfiguration?.useApifyProxy === true
             ? await Actor.createProxyConfiguration(input.proxyConfiguration)
             : undefined;
+    const requestQueue = await Actor.openRequestQueue(`api-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
 
     const crawler = new CheerioCrawler({
+        requestQueue,
         proxyConfiguration,
         maxRequestsPerCrawl: input.maxRequestsPerCrawl,
         maxConcurrency: 10,
