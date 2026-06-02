@@ -1,0 +1,47 @@
+{
+    "$schema": "https://apify.com/schemas/v1/dataset.ide.json",
+    "actorSpecification": 1,
+    "fields": {
+        "type": "object",
+        "properties": {
+            "url": { "type": "string" },
+            "label": { "type": "string" },
+            "sourceUrl": { "type": "string" },
+            "fromNav": { "type": "boolean" },
+            "depth": { "type": "integer" }
+        }
+    },
+    "views": {
+        "overview": {
+            "title": "Link danh mục",
+            "transformation": {
+                "fields": ["url", "label", "sourceUrl", "fromNav", "depth"]
+            },
+            "display": {
+                "component": "table",
+                "properties": {
+                    "url": {
+                        "label": "URL danh mục",
+                        "format": "link"
+                    },
+                    "label": {
+                        "label": "Nhãn link",
+                        "format": "text"
+                    },
+                    "sourceUrl": {
+                        "label": "Tìm thấy tại",
+                        "format": "link"
+                    },
+                    "fromNav": {
+                        "label": "Từ menu",
+                        "format": "boolean"
+                    },
+                    "depth": {
+                        "label": "Độ sâu",
+                        "format": "number"
+                    }
+                }
+            }
+        }
+    }
+}

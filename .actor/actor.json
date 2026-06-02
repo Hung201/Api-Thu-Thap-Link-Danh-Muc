@@ -1,0 +1,25 @@
+{
+    "$schema": "https://apify.com/schemas/v1/actor.ide.json",
+    "actorSpecification": 1,
+    "name": "thu-thap-link-danhmuc",
+    "title": "Thu thập link danh mục website",
+    "description": "Thu thập link danh mục sản phẩm từ website Việt Nam (WooCommerce, Max Mega Menu, slug phẳng). Hỗ trợ giới hạn số link và lọc tin tức/giới thiệu.",
+    "version": "1.0.0",
+    "meta": {
+        "templateId": "js-crawlee-cheerio",
+        "generatedBy": "Cursor with Composer"
+    },
+    "input": "./input_schema.json",
+    "output": "./output_schema.json",
+    "storages": {
+        "dataset": "./dataset_schema.json"
+    },
+    "dockerfile": "../Dockerfile",
+    "readme": "../README.md",
+    "categories": ["ECOMMERCE", "SCRAPING"],
+    "defaultRunOptions": {
+        "build": "latest",
+        "memoryMbytes": 1024,
+        "timeoutSecs": 300
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "$schema": "https://apify.com/schemas/v1/output.ide.json",
+    "actorOutputSchemaVersion": 1,
+    "title": "Kết quả thu thập link danh mục",
+    "properties": {
+        "dataset": {
+            "type": "string",
+            "title": "Dataset — danh sách link danh mục",
+            "template": "{{links.apiDefaultDatasetUrl}}/items"
+        },
+        "overview": {
+            "type": "string",
+            "title": "Xem bảng trên Console",
+            "template": "{{links.publicRunUrl}}#output"
+        }
+    }
+}

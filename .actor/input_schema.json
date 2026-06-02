@@ -1,0 +1,64 @@
+{
+    "$schema": "https://apify.com/schemas/v1/input.ide.json",
+    "title": "Thu thập link danh mục",
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+        "startUrl": {
+            "title": "URL website",
+            "type": "string",
+            "description": "Trang chủ hoặc bất kỳ trang nào của website (Actor sẽ tự quét thêm trang chủ để lấy menu Danh mục).",
+            "editor": "textfield",
+            "prefill": "https://tongkhokeodan.com/"
+        },
+        "startUrls": {
+            "title": "Nhiều URL khởi đầu (tùy chọn)",
+            "type": "array",
+            "description": "Danh sách URL bổ sung.",
+            "editor": "requestListSources",
+            "prefill": []
+        },
+        "maxCategoryLinks": {
+            "title": "Giới hạn số link danh mục",
+            "type": "integer",
+            "description": "Dừng khi đủ số link (0 = không giới hạn).",
+            "default": 0,
+            "minimum": 0
+        },
+        "maxDepth": {
+            "title": "Độ sâu crawl",
+            "type": "integer",
+            "description": "Số cấp trang danh mục con (0 = chỉ trang khởi đầu/trang chủ).",
+            "default": 1,
+            "minimum": 0,
+            "maximum": 5
+        },
+        "maxRequestsPerCrawl": {
+            "title": "Số trang tối đa",
+            "type": "integer",
+            "description": "Giới hạn số request HTTP trong một lần chạy.",
+            "default": 50,
+            "minimum": 1
+        },
+        "includeHomepage": {
+            "title": "Luôn quét trang chủ",
+            "type": "boolean",
+            "description": "Tự thêm URL gốc (/) để lấy menu Danh mục WooCommerce/WordPress.",
+            "default": true
+        },
+        "includeSubdomains": {
+            "title": "Bao gồm subdomain",
+            "type": "boolean",
+            "description": "Cho phép thu link từ subdomain của website.",
+            "default": false
+        },
+        "proxyConfiguration": {
+            "title": "Proxy",
+            "type": "object",
+            "description": "Cấu hình proxy Apify khi website chặn IP.",
+            "editor": "proxy",
+            "default": { "useApifyProxy": false }
+        }
+    },
+    "required": []
+}

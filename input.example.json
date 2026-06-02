@@ -1,0 +1,11 @@
+{
+    "startUrl": "https://tongkhokeodan.com/",
+    "maxCategoryLinks": 200,
+    "maxDepth": 1,
+    "maxRequestsPerCrawl": 50,
+    "includeHomepage": true,
+    "includeSubdomains": false,
+    "proxyConfiguration": {
+        "useApifyProxy": false
+    }
+}
