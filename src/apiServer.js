@@ -2,9 +2,13 @@ import { createServer } from 'node:http';
 
 import { log } from 'apify';
 
+import { getServerPort } from './loadEnv.js';
 import { runCategoryCrawl } from './runCrawl.js';
 
-const PORT = Number(process.env.ACTOR_WEB_SERVER_PORT) || 4321;
+const PORT = getServerPort();
+
+/** Endpoint chính — thu thập link danh mục */
+export const COLLECT_CATEGORY_LINKS_PATH = '/collect-category-links';
 
 /** @type {boolean} */
 let isBusy = false;
@@ -37,7 +41,7 @@ const API_INFO = {
     endpoints: {
         'GET /': 'Health + readiness probe (Apify standby)',
         'GET /health': 'Health check',
-        'POST /scrape': 'Thu thập link danh mục — body JSON giống input.json',
+        [`POST ${COLLECT_CATEGORY_LINKS_PATH}`]: 'Thu thập link danh mục — body JSON giống input.json',
     },
     inputExample: {
         startUrl: 'https://example.com/',
@@ -74,7 +78,7 @@ async function handleRequest(req, res) {
         return;
     }
 
-    if (method === 'POST' && (path === '/scrape' || path === '/')) {
+    if (method === 'POST' && path === COLLECT_CATEGORY_LINKS_PATH) {
         if (isBusy) {
             sendJson(res, 429, { success: false, error: 'Đang xử lý request khác, thử lại sau.' });
             return;
@@ -95,7 +99,7 @@ async function handleRequest(req, res) {
             sendJson(res, 200, { success: true, total, items });
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
-            log.error('API /scrape lỗi', { message });
+            log.error(`API ${COLLECT_CATEGORY_LINKS_PATH} lỗi`, { message });
             sendJson(res, 400, { success: false, error: message });
         } finally {
             isBusy = false;
@@ -121,7 +125,7 @@ export function startApiServer() {
 
         server.listen(PORT, () => {
             log.info(`API đang lắng nghe http://0.0.0.0:${PORT}`, {
-                scrape: `POST http://127.0.0.1:${PORT}/scrape`,
+                collectCategoryLinks: `POST http://127.0.0.1:${PORT}${COLLECT_CATEGORY_LINKS_PATH}`,
             });
             resolve(server);
         });

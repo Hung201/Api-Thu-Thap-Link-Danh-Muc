@@ -1,3 +1,5 @@
+import './loadEnv.js';
+
 import { setTimeout } from 'node:timers/promises';
 
 import { Actor, log } from 'apify';
@@ -28,5 +30,5 @@ if (runMode === 'batch') {
     await Actor.exit();
 } else {
     await startApiServer();
-    log.info('Chế độ API — gửi POST /scrape với body JSON giống input.json');
+    log.info('Chế độ API — gửi POST /collect-category-links với body JSON giống input.json');
 }

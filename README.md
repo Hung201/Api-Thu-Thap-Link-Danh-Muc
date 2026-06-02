@@ -17,16 +17,26 @@ Actor chạy ở chế độ **HTTP API (standby)**: gửi JSON giống `input.j
 ### API (mặc định)
 
 ```bash
+cp .env.example .env   # chỉnh PORT nếu cần
 npm start
 # hoặc sau apify push — gọi URL standby của Actor trên Apify
 ```
 
-**POST** `http://localhost:4321/scrape`  
+**`.env` (local / server riêng):**
+
+| Biến | Mặc định | Mô tả |
+|------|----------|--------|
+| `PORT` | `4321` | Port API Postman |
+| `RUN_MODE` | `api` | `batch` = chạy một lần từ input.json |
+
+Trên **Apify Cloud** không cần file `.env` — dùng `ACTOR_WEB_SERVER_PORT` do platform gán.
+
+**POST** `http://localhost:4321/collect-category-links`  
 **Content-Type:** `application/json`  
 **Body:** giống hệt `input.json`:
 
 ```bash
-curl -X POST http://localhost:4321/scrape ^
+curl -X POST http://localhost:4321/collect-category-links ^
   -H "Content-Type: application/json" ^
   -d @input.json
 ```
@@ -47,7 +57,7 @@ curl -X POST http://localhost:4321/scrape ^
 |----------|--------|
 | `GET /` | Health + readiness probe (Apify) |
 | `GET /health` | Trạng thái server |
-| `POST /scrape` | Thu thập link danh mục |
+| `POST /collect-category-links` | Thu thập link danh mục |
 
 ### Chế độ batch (local / `input.json`)
 

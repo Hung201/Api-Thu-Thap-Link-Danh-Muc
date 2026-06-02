@@ -12,6 +12,8 @@ apify_storage
 crawlee_storage
 input.json
 input.example.json
+.env
+.env.example
 
 # Tests & lint (chỉ cần khi dev)
 test
