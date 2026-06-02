@@ -12,18 +12,51 @@ Chạy thử trên [Apify Console](https://console.apify.com/), lên lịch, g�
 
 ## Cách dùng
 
-1. Sao chép `input.example.json` thành `input.json` (local) hoặc điền **Input** trên Apify Console.
-2. Đặt `startUrl` là link website cần quét.
-3. Chạy `apify run` (local) hoặc **Start** trên Console.
-4. Xem kết quả tab **Output** / dataset.
+Actor chạy ở chế độ **HTTP API (standby)**: gửi JSON giống `input.json`, nhận danh sách link danh mục trong response.
 
-**Ưu tiên input:** nếu có file `input.json` ở thư mục gốc project thì Actor dùng file đó; không thì dùng input Apify.
+### API (mặc định)
 
 ```bash
-cp input.example.json input.json
-# Sửa startUrl trong input.json
-apify run
+npm start
+# hoặc sau apify push — gọi URL standby của Actor trên Apify
 ```
+
+**POST** `http://localhost:4321/scrape`  
+**Content-Type:** `application/json`  
+**Body:** giống hệt `input.json`:
+
+```bash
+curl -X POST http://localhost:4321/scrape ^
+  -H "Content-Type: application/json" ^
+  -d @input.json
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "total": 3,
+  "items": [
+    { "url": "...", "label": "...", "sourceUrl": "...", "fromNav": true, "depth": 0 }
+  ]
+}
+```
+
+| Endpoint | Mô tả |
+|----------|--------|
+| `GET /` | Health + readiness probe (Apify) |
+| `GET /health` | Trạng thái server |
+| `POST /scrape` | Thu thập link danh mục |
+
+### Chế độ batch (local / `input.json`)
+
+```bash
+npm run start:batch
+# hoặc: apify run -- --batch   (nếu hỗ trợ)
+```
+
+Đọc `input.json` (nếu có) hoặc Input Apify, ghi kết quả vào dataset — không bật HTTP server.
 
 ## Input
 

@@ -16,6 +16,7 @@
     },
     "dockerfile": "../Dockerfile",
     "readme": "../README.md",
+    "usesStandbyMode": true,
     "categories": ["ECOMMERCE", "SCRAPING"],
     "defaultRunOptions": {
         "build": "latest",

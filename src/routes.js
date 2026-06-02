@@ -6,6 +6,9 @@ import { canEnqueueCategoryUrl, extractCategoryLinks, isSameSite, normalizeLink 
 /** @type {Set<string>} */
 let seenUrls = new Set();
 
+/** @type {object[]} */
+let collectedItems = [];
+
 /** @type {{ siteHostname: string, includeSubdomains: boolean, maxDepth: number, maxCategoryLinks: number }} */
 let scrapeConfig = {
     siteHostname: '',
@@ -15,10 +18,11 @@ let scrapeConfig = {
 };
 
 /**
- * @param {{ seenUrls: Set<string>, siteHostname: string, includeSubdomains: boolean, maxDepth: number, maxCategoryLinks: number }} options
+ * @param {{ seenUrls: Set<string>, items?: object[], siteHostname: string, includeSubdomains: boolean, maxDepth: number, maxCategoryLinks: number }} options
  */
 export function initCategoryScraper(options) {
     seenUrls = options.seenUrls;
+    collectedItems = options.items ?? [];
     scrapeConfig = {
         siteHostname: options.siteHostname,
         includeSubdomains: options.includeSubdomains,
@@ -63,13 +67,15 @@ router.addDefaultHandler(async ({ $, request, enqueueLinks, pushData, crawler })
         newCount += 1;
         remaining -= 1;
 
-        await pushData({
+        const record = {
             url: link.url,
             label: link.label,
             sourceUrl: link.sourceUrl,
             fromNav: link.fromNav,
             depth,
-        });
+        };
+        collectedItems.push(record);
+        await pushData(record);
     }
 
     log.info(`Trang: ${pageUrl} | depth=${depth} | mới: ${newCount} | tổng: ${seenUrls.size}`);

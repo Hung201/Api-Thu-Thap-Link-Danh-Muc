@@ -20,6 +20,8 @@
     },
     "scripts": {
         "start": "node src/main.js",
+        "start:batch": "node src/main.js --batch",
+        "start:api": "node src/main.js",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "lint": "eslint",
