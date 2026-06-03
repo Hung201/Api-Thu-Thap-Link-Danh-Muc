@@ -91,7 +91,7 @@ router.addDefaultHandler(async ({ $, request, enqueueLinks, pushData, crawler })
     await enqueueLinks({
         strategy: 'same-domain',
         selector:
-            'li.menu-item-object-product_cat > a, li.mega-menu-item-object-product_cat > a.mega-menu-link, .product-categories > li > a, .header-middle-navigation .dropdown-content a, .menubar .menu .submenu a, .menu_desktop .submenu a, #menu .submenu a, section.product_index h2.title a, .header-menu .menu_holder .item > a.item-cate, .header-menu .menu_holder .menu-hover a.title-holder, .header-menu .menu_holder .menu-hover .holder-last a',
+            'li.menu-item-object-product_cat > a, li.mega-menu-item-object-product_cat > a.mega-menu-link, .product-categories > li > a, .header-middle-navigation .dropdown-content a, .menubar .menu .submenu a, .menu_desktop .submenu a, #menu .submenu a, section.product_index h2.title a, .header-menu .menu_holder .item > a.item-cate, .header-menu .menu_holder .menu-hover a.title-holder, .header-menu .menu_holder .menu-hover .holder-last a, #offcanvas a.l1:not(.dropicon), #offcanvas ul.l2 a.l2, .panel-product-category .category-item a, .aside-category .uk-accordion a',
         transformRequestFunction: (req) => {
             const nextDepth = depth + 1;
             const normalized = normalizeLink(req.url, pageUrl);

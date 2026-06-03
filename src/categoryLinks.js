@@ -38,6 +38,14 @@ const PRODUCT_DROPDOWN_SELECTORS = [
 /** Trang chủ block danh mục (theme Lindos / tương tự) */
 const HOMEPAGE_CATEGORY_SELECTORS = ['section.product_index h2.title a.title_link_a[href]', '.product_index h2.title a[href]'];
 
+/** Menu offcanvas + block danh mục trang chủ (TOTO / CMS .html) */
+const HTML_CMS_CATEGORY_SELECTORS = [
+    '#offcanvas a.l1[href]:not(.dropicon)',
+    '#offcanvas ul.l2 a.l2[href]',
+    '.panel-product-category .category-item a[href]',
+    '.aside-category .uk-accordion a[href]',
+];
+
 /**
  * @param {string} url
  * @param {string} siteHostname
@@ -114,6 +122,14 @@ export function extractCategoryLinks($, pageUrl, siteHostname, siteOptions = {})
 
     for (const selector of HOMEPAGE_CATEGORY_SELECTORS) {
         $(selector).each((_, el) => {
+            if (isInsideProductBlock($, el)) return;
+            addLink($(el).attr('href'), getLinkLabel($, el), { fromProductMenu: true });
+        });
+    }
+
+    for (const selector of HTML_CMS_CATEGORY_SELECTORS) {
+        $(selector).each((_, el) => {
+            if ($(el).hasClass('dropicon')) return;
             if (isInsideProductBlock($, el)) return;
             addLink($(el).attr('href'), getLinkLabel($, el), { fromProductMenu: true });
         });

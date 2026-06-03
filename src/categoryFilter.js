@@ -32,6 +32,12 @@ export const PRODUCT_SLUG_HINT =
 export const FLAT_CATEGORY_SLUG =
     /^(?:san-pham-[a-z0-9][a-z0-9-]*|vat-lieu-[a-z0-9][a-z0-9-]*|keo-[a-z0-9][a-z0-9-]*|son-[a-z0-9][a-z0-9-]*|hang-[a-z0-9][a-z0-9-]*)$/i;
 
+/** File .html dạng danh mục (TOTO: ban-cau.html, chau-rua-dat-tren-ban.html) */
+export const HTML_CATALOG_FILE = /^[a-z][a-z0-9-]*\.html$/i;
+
+/** Slug trang hệ thống .html — không phải danh mục SP */
+export const HTML_SYSTEM_SLUG = /^(?:trang-chu|tim-kiem|index|home)$/i;
+
 const MAX_SLUG_LENGTH = 80;
 const MIN_LABEL_LENGTH = 2;
 
@@ -82,6 +88,10 @@ export function isExcludedUrl(url) {
         if (/\/san-pham\/[^/]+\/?$/i.test(pathname)) return true;
         if (/\/product\/[^/]+\/?$/i.test(pathname)) return true;
         if (/\/p\/[^/]+\/?$/i.test(pathname)) return true;
+        if (/\/trang-\d+\.html$/i.test(pathname)) return true;
+
+        const htmlFile = pathname.match(/\/([^/]+)\.html$/i);
+        if (htmlFile && !htmlFile[1].includes('-')) return true;
 
         const segments = pathname.split('/').filter(Boolean);
         if (segments.length === 0) return true;
@@ -188,9 +198,35 @@ export function isInsideProductBlock($, el) {
         .map((node) => `${node.attribs?.class || ''} ${node.attribs?.id || ''}`)
         .join(' ');
 
-    return /menu-item-object-product(?:\s|$)|\btype-product\b|\bproduct-type-simple\b|\bproduct-small\b|\brelated-products\b|\bproduct_list\b|\bproduct-grid\b/i.test(
+    return /menu-item-object-product(?:\s|$)|\btype-product\b|\bproduct-type-simple\b|\bproduct-small\b|\brelated-products\b|\bproduct_list\b|\bproduct-grid\b|\bproduct-item\b|\bproduct-container\b/i.test(
         classAndId,
     );
+}
+
+/**
+ * URL danh mục dạng /ban-cau.html hoặc /ban-cau/bon-cau-neorest.html (CMS HTML, TOTO).
+ * @param {string} url
+ */
+export function isHtmlCatalogCategoryUrl(url) {
+    try {
+        const { pathname } = new URL(url);
+        if (NON_PRODUCT_PATH.test(pathname)) return false;
+
+        const segments = pathname.split('/').filter(Boolean);
+        if (segments.length === 0 || segments.length > 2) return false;
+
+        const file = segments[segments.length - 1];
+        if (!HTML_CATALOG_FILE.test(file)) return false;
+        if (/^trang-\d+\.html$/i.test(file)) return false;
+
+        const slug = file.replace(/\.html$/i, '');
+        if (HTML_SYSTEM_SLUG.test(slug)) return false;
+        if (!slug.includes('-')) return false;
+
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 /**
@@ -260,6 +296,7 @@ export function passesProductCategoryFilter(url, ctx = {}) {
     }
 
     if (isFlatProductCategoryUrl(url)) return true;
+    if (isHtmlCatalogCategoryUrl(url)) return true;
     if (hasProductCategoryPath(url) && hasProductSlug(url)) return true;
     if (hasProductCategoryPath(url)) {
         const segments = new URL(url).pathname.split('/').filter(Boolean);
@@ -278,6 +315,7 @@ export function canEnqueueCategoryUrl(url) {
     if (passesProductCategoryFilter(url, { fromTaxonomy: true })) return true;
     if (passesProductCategoryFilter(url, { fromProductMenu: true })) return true;
     if (isFlatProductCategoryUrl(url)) return true;
+    if (isHtmlCatalogCategoryUrl(url)) return true;
     if (hasProductCategoryPath(url) && hasProductSlug(url)) return true;
     return false;
 }

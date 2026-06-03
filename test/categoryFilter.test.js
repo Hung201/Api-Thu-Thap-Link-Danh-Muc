@@ -95,6 +95,27 @@ describe('categoryFilter', () => {
         expect(links.length).toBeLessThanOrEqual(6);
     });
 
+    it('thietbivesinhtotovn — menu offcanvas + block danh mục .html', () => {
+        const htmlPath = path.join(process.cwd(), 'storage', 'tmp-toto-home.html');
+        let html;
+        try {
+            html = readFileSync(htmlPath, 'utf8');
+        } catch {
+            return;
+        }
+
+        const $ = cheerio.load(html);
+        const links = extractCategoryLinks($, 'https://thietbivesinhtotovn.com/', 'thietbivesinhtotovn.com');
+        const urls = links.map((l) => l.url);
+
+        expect(urls).toContain('https://thietbivesinhtotovn.com/ban-cau.html');
+        expect(urls).toContain('https://thietbivesinhtotovn.com/chau-rua.html');
+        expect(urls).toContain('https://thietbivesinhtotovn.com/bon-cau-neorest.html');
+        expect(urls).not.toContain('https://thietbivesinhtotovn.com/trang-chu.html');
+        expect(urls.every((u) => !u.endsWith('ms887rt8.html'))).toBe(true);
+        expect(links.length).toBeGreaterThanOrEqual(8);
+    });
+
     it('isUnderProductMenu phân biệt Sản phẩm vs Tin tức', () => {
         const html = `
             <ul>
