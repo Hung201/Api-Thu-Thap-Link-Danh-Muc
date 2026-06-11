@@ -1,10 +1,12 @@
 import {
+    buildLadiSectionUrl,
     isExpandableMenuParent,
     isInsideProductBlock,
     isUnderProductMenu,
     isValidLabel,
     isWooCommerceProductCategory,
     normalizeLink,
+    parseLadiDataItem,
     passesProductCategoryFilter,
 } from './categoryFilter.js';
 
@@ -84,8 +86,7 @@ export function extractCategoryLinks($, pageUrl, siteHostname, siteOptions = {})
     /** @type {Map<string, { url: string, label: string, sourceUrl: string, fromNav: boolean }>} */
     const found = new Map();
 
-    const addLink = (href, label, ctx) => {
-        const url = normalizeLink(href, pageUrl);
+    const addUrl = (url, label, ctx) => {
         if (!url) return;
         if (!isSameSite(url, siteHostname, siteOptions)) return;
         if (!passesProductCategoryFilter(url, { label, ...ctx })) return;
@@ -98,6 +99,10 @@ export function extractCategoryLinks($, pageUrl, siteHostname, siteOptions = {})
         } else if (text.length > (found.get(url).label?.length || 0)) {
             found.get(url).label = text;
         }
+    };
+
+    const addLink = (href, label, ctx) => {
+        addUrl(normalizeLink(href, pageUrl), label, ctx);
     };
 
     for (const selector of TAXONOMY_CATEGORY_SELECTORS) {
@@ -134,6 +139,15 @@ export function extractCategoryLinks($, pageUrl, siteHostname, siteOptions = {})
             addLink($(el).attr('href'), getLinkLabel($, el), { fromProductMenu: true });
         });
     }
+
+    /** LadiPage: menu không có href, chỉ data-item → section trên cùng trang */
+    const ladiSections = new Set();
+    $('.ladi-menu.list-menu-items a[data-item]').each((_, el) => {
+        const sectionId = parseLadiDataItem($(el).attr('data-item'));
+        if (!sectionId || ladiSections.has(sectionId)) return;
+        ladiSections.add(sectionId);
+        addUrl(buildLadiSectionUrl(pageUrl, sectionId), getLinkLabel($, el), { fromProductMenu: true });
+    });
 
     const isWooCategoryPage =
         $('body').hasClass('tax-product_cat') ||

@@ -42,6 +42,47 @@ const MAX_SLUG_LENGTH = 80;
 const MIN_LABEL_LENGTH = 2;
 
 /**
+ * Parse menu LadiPage: data-item → SECTION id.
+ * @param {string | undefined} dataItem
+ * @returns {string | null}
+ */
+export function parseLadiDataItem(dataItem) {
+    if (!dataItem) return null;
+    try {
+        const json = JSON.parse(decodeURIComponent(dataItem));
+        if (json?.type === 'section' && typeof json.action === 'string' && /^SECTION\d+$/i.test(json.action)) {
+            return json.action;
+        }
+    } catch {
+        return null;
+    }
+    return null;
+}
+
+/**
+ * URL danh mục ảo trên landing LadiPage (workfix.vn: /#SECTION3).
+ * @param {string} pageUrl
+ * @param {string} sectionId
+ */
+export function buildLadiSectionUrl(pageUrl, sectionId) {
+    const base = new URL(pageUrl);
+    base.hash = sectionId;
+    return base.href;
+}
+
+/**
+ * @param {string} url
+ */
+export function isLadiSectionUrl(url) {
+    try {
+        const { hash } = new URL(url);
+        return /^#SECTION\d+$/i.test(hash);
+    } catch {
+        return false;
+    }
+}
+
+/**
  * @param {string} href
  * @param {string} baseUrl
  * @returns {string | null}
@@ -77,6 +118,8 @@ export function normalizeLink(href, baseUrl) {
  */
 export function isExcludedUrl(url) {
     try {
+        if (isLadiSectionUrl(url)) return false;
+
         const { pathname, search } = new URL(url);
         const path = `${pathname}${search}`;
 
@@ -297,6 +340,7 @@ export function passesProductCategoryFilter(url, ctx = {}) {
 
     if (isFlatProductCategoryUrl(url)) return true;
     if (isHtmlCatalogCategoryUrl(url)) return true;
+    if (isLadiSectionUrl(url)) return true;
     if (hasProductCategoryPath(url) && hasProductSlug(url)) return true;
     if (hasProductCategoryPath(url)) {
         const segments = new URL(url).pathname.split('/').filter(Boolean);
@@ -311,6 +355,7 @@ export function passesProductCategoryFilter(url, ctx = {}) {
  * @param {string} url
  */
 export function canEnqueueCategoryUrl(url) {
+    if (isLadiSectionUrl(url)) return false;
     if (isExcludedUrl(url)) return false;
     if (passesProductCategoryFilter(url, { fromTaxonomy: true })) return true;
     if (passesProductCategoryFilter(url, { fromProductMenu: true })) return true;

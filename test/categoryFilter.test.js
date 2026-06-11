@@ -95,6 +95,26 @@ describe('categoryFilter', () => {
         expect(links.length).toBeLessThanOrEqual(6);
     });
 
+    it('workfix.vn — menu LadiPage (section anchor, không có href)', () => {
+        const htmlPath = path.join(process.cwd(), 'storage', 'tmp-workfix-home.html');
+        let html;
+        try {
+            html = readFileSync(htmlPath, 'utf8');
+        } catch {
+            return;
+        }
+
+        const $ = cheerio.load(html);
+        const links = extractCategoryLinks($, 'https://www.workfix.vn/', 'workfix.vn');
+        const urls = links.map((l) => l.url);
+
+        expect(urls).toContain('https://www.workfix.vn/#SECTION3');
+        expect(urls).toContain('https://www.workfix.vn/#SECTION7');
+        expect(links.some((l) => l.label.includes('MÁY KHOAN'))).toBe(true);
+        expect(urls).not.toContain('https://www.workfix.vn/gioithieu');
+        expect(links.length).toBe(6);
+    });
+
     it('thietbivesinhtotovn — menu offcanvas + block danh mục .html', () => {
         const htmlPath = path.join(process.cwd(), 'storage', 'tmp-toto-home.html');
         let html;
