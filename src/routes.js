@@ -3,27 +3,24 @@ import { log } from 'apify';
 
 import { canEnqueueCategoryUrl, extractCategoryLinks, isSameSite, normalizeLink } from './categoryLinks.js';
 
-/** @type {Set<string>} */
-let seenUrls = new Set();
-
-/** @type {object[]} */
-let collectedItems = [];
-
-/** @type {{ siteHostname: string, includeSubdomains: boolean, maxDepth: number, maxCategoryLinks: number }} */
-let scrapeConfig = {
-    siteHostname: '',
-    includeSubdomains: false,
-    maxDepth: 1,
-    maxCategoryLinks: 0,
-};
+/**
+ * @typedef {Object} CategoryCrawlContext
+ * @property {Set<string>} seenUrls
+ * @property {object[]} items
+ * @property {string} siteHostname
+ * @property {boolean} includeSubdomains
+ * @property {number} maxDepth
+ * @property {number} maxCategoryLinks
+ */
 
 /**
  * @param {{ seenUrls: Set<string>, items?: object[], siteHostname: string, includeSubdomains: boolean, maxDepth: number, maxCategoryLinks: number }} options
+ * @returns {CategoryCrawlContext}
  */
-export function initCategoryScraper(options) {
-    seenUrls = options.seenUrls;
-    collectedItems = options.items ?? [];
-    scrapeConfig = {
+export function createCategoryCrawlContext(options) {
+    return {
+        seenUrls: options.seenUrls,
+        items: options.items ?? [],
         siteHostname: options.siteHostname,
         includeSubdomains: options.includeSubdomains,
         maxDepth: options.maxDepth,
@@ -31,20 +28,67 @@ export function initCategoryScraper(options) {
     };
 }
 
-export function isAtCategoryLimit() {
-    return scrapeConfig.maxCategoryLinks > 0 && seenUrls.size >= scrapeConfig.maxCategoryLinks;
+/** @type {Map<string, CategoryCrawlContext>} */
+const crawlContexts = new Map();
+
+/**
+ * @param {string} crawlId
+ * @param {CategoryCrawlContext} ctx
+ */
+export function registerCrawlContext(crawlId, ctx) {
+    crawlContexts.set(crawlId, ctx);
 }
 
-export function getRemainingCategorySlots() {
-    if (scrapeConfig.maxCategoryLinks <= 0) return Infinity;
-    return Math.max(0, scrapeConfig.maxCategoryLinks - seenUrls.size);
+/**
+ * @param {string} crawlId
+ */
+export function unregisterCrawlContext(crawlId) {
+    crawlContexts.delete(crawlId);
+}
+
+/** @deprecated Dùng createCategoryCrawlContext — giữ cho test cũ */
+export function initCategoryScraper(options) {
+    return createCategoryCrawlContext(options);
+}
+
+/**
+ * @param {CategoryCrawlContext} ctx
+ */
+export function isAtCategoryLimit(ctx) {
+    return ctx.maxCategoryLinks > 0 && ctx.seenUrls.size >= ctx.maxCategoryLinks;
+}
+
+/**
+ * @param {CategoryCrawlContext} ctx
+ */
+export function getRemainingCategorySlots(ctx) {
+    if (ctx.maxCategoryLinks <= 0) return Infinity;
+    return Math.max(0, ctx.maxCategoryLinks - ctx.seenUrls.size);
+}
+
+/**
+ * @param {import('@crawlee/core').Request} request
+ * @returns {CategoryCrawlContext}
+ */
+function getCrawlContext(request) {
+    const crawlId = request.userData?.crawlId;
+    if (!crawlId) {
+        throw new Error('Thiếu crawlId trên request — mỗi crawl phải gắn context riêng.');
+    }
+    const ctx = crawlContexts.get(crawlId);
+    if (!ctx) {
+        throw new Error(`Không tìm thấy crawlContext cho crawlId=${crawlId}.`);
+    }
+    return ctx;
 }
 
 export const router = createCheerioRouter();
 
 router.addDefaultHandler(async ({ $, request, enqueueLinks, pushData, crawler }) => {
-    if (isAtCategoryLimit()) {
-        log.info(`Đã đủ ${scrapeConfig.maxCategoryLinks} link danh mục — dừng crawl.`);
+    const ctx = getCrawlContext(request);
+
+    if (isAtCategoryLimit(ctx)) {
+        log.info(`Đã đủ ${ctx.maxCategoryLinks} link danh mục — dừng crawl.`);
         await crawler.stop();
         return;
     }
@@ -52,18 +96,18 @@ router.addDefaultHandler(async ({ $, request, enqueueLinks, pushData, crawler })
     const pageUrl = request.loadedUrl || request.url;
     const depth = request.userData?.depth ?? 0;
 
-    const links = extractCategoryLinks($, pageUrl, scrapeConfig.siteHostname, {
-        includeSubdomains: scrapeConfig.includeSubdomains,
+    const links = extractCategoryLinks($, pageUrl, ctx.siteHostname, {
+        includeSubdomains: ctx.includeSubdomains,
     });
 
     let newCount = 0;
-    let remaining = getRemainingCategorySlots();
+    let remaining = getRemainingCategorySlots(ctx);
 
     for (const link of links) {
         if (remaining <= 0) break;
-        if (seenUrls.has(link.url)) continue;
+        if (ctx.seenUrls.has(link.url)) continue;
 
-        seenUrls.add(link.url);
+        ctx.seenUrls.add(link.url);
         newCount += 1;
         remaining -= 1;
 
@@ -74,19 +118,19 @@ router.addDefaultHandler(async ({ $, request, enqueueLinks, pushData, crawler })
             fromNav: link.fromNav,
             depth,
         };
-        collectedItems.push(record);
+        ctx.items.push(record);
         await pushData(record);
     }
 
-    log.info(`Trang: ${pageUrl} | depth=${depth} | mới: ${newCount} | tổng: ${seenUrls.size}`);
+    log.info(`Trang: ${pageUrl} | depth=${depth} | mới: ${newCount} | tổng: ${ctx.seenUrls.size}`);
 
-    if (isAtCategoryLimit()) {
-        log.info(`Đạt giới hạn ${scrapeConfig.maxCategoryLinks} link danh mục.`);
+    if (isAtCategoryLimit(ctx)) {
+        log.info(`Đạt giới hạn ${ctx.maxCategoryLinks} link danh mục.`);
         await crawler.stop();
         return;
     }
 
-    if (depth >= scrapeConfig.maxDepth) return;
+    if (depth >= ctx.maxDepth) return;
 
     await enqueueLinks({
         strategy: 'same-domain',
@@ -96,13 +140,13 @@ router.addDefaultHandler(async ({ $, request, enqueueLinks, pushData, crawler })
             const nextDepth = depth + 1;
             const normalized = normalizeLink(req.url, pageUrl);
             if (!normalized) return false;
-            if (!isSameSite(normalized, scrapeConfig.siteHostname, { includeSubdomains: scrapeConfig.includeSubdomains })) {
+            if (!isSameSite(normalized, ctx.siteHostname, { includeSubdomains: ctx.includeSubdomains })) {
                 return false;
             }
             if (!canEnqueueCategoryUrl(normalized)) return false;
 
             req.url = normalized;
-            req.userData = { ...req.userData, depth: nextDepth };
+            req.userData = { ...req.userData, depth: nextDepth, crawlId: request.userData.crawlId };
             return req;
         },
     });

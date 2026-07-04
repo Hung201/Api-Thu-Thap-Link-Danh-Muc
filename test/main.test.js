@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { normalizeInput } from '../src/categoryLinks.js';
-import { getRemainingCategorySlots, initCategoryScraper, isAtCategoryLimit } from '../src/routes.js';
+import { createCategoryCrawlContext, getRemainingCategorySlots, isAtCategoryLimit } from '../src/routes.js';
 
 describe('main input & limit', () => {
     it('normalizeInput yêu cầu ít nhất một URL sau khi gộp', () => {
@@ -11,15 +11,16 @@ describe('main input & limit', () => {
 
     it('giới hạn maxCategoryLinks', () => {
         const seen = new Set(['https://a.com/1', 'https://a.com/2']);
-        initCategoryScraper({
+        const ctx = createCategoryCrawlContext({
             seenUrls: seen,
+            items: [],
             siteHostname: 'a.com',
             includeSubdomains: false,
             maxDepth: 1,
             maxCategoryLinks: 2,
         });
 
-        expect(isAtCategoryLimit()).toBe(true);
-        expect(getRemainingCategorySlots()).toBe(0);
+        expect(isAtCategoryLimit(ctx)).toBe(true);
+        expect(getRemainingCategorySlots(ctx)).toBe(0);
     });
 });

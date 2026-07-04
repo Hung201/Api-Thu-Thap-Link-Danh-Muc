@@ -2,7 +2,7 @@ import { CheerioCrawler } from '@crawlee/cheerio';
 import { Actor, log } from 'apify';
 
 import { getHomepageUrl, normalizeInput } from './categoryLinks.js';
-import { initCategoryScraper, router } from './routes.js';
+import { createCategoryCrawlContext, registerCrawlContext, router, unregisterCrawlContext } from './routes.js';
 
 const DEFAULT_HEADERS = {
     'User-Agent':
@@ -23,66 +23,69 @@ export async function runCategoryCrawl(rawInput) {
     }
 
     const startHostname = new URL(input.startUrls[0].url).hostname;
-    const seenUrls = new Set();
-    /** @type {object[]} */
-    const items = [];
-
-    initCategoryScraper({
-        seenUrls,
-        items,
+    const crawlId = `crawl-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const crawlContext = createCategoryCrawlContext({
+        seenUrls: new Set(),
+        items: [],
         siteHostname: startHostname,
         includeSubdomains: input.includeSubdomains,
         maxDepth: input.maxDepth,
         maxCategoryLinks: input.maxCategoryLinks,
     });
 
-    const proxyConfiguration =
-        input.proxyConfiguration?.useApifyProxy === true
-            ? await Actor.createProxyConfiguration(input.proxyConfiguration)
-            : undefined;
-    const requestQueue = await Actor.openRequestQueue(`api-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+    registerCrawlContext(crawlId, crawlContext);
 
-    const crawler = new CheerioCrawler({
-        requestQueue,
-        proxyConfiguration,
-        maxRequestsPerCrawl: input.maxRequestsPerCrawl,
-        maxConcurrency: 10,
-        maxRequestRetries: 2,
-        requestHandlerTimeoutSecs: 60,
-        navigationTimeoutSecs: 60,
-        requestHandler: router,
-        preNavigationHooks: [
-            async ({ request }) => {
-                request.headers = { ...DEFAULT_HEADERS, ...request.headers };
-            },
-        ],
-    });
+    try {
+        const proxyConfiguration =
+            input.proxyConfiguration?.useApifyProxy === true
+                ? await Actor.createProxyConfiguration(input.proxyConfiguration)
+                : undefined;
+        const requestQueue = await Actor.openRequestQueue(`api-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
 
-    /** @type {Map<string, { url: string, userData: { depth: number } }>} */
-    const seedMap = new Map();
+        const crawler = new CheerioCrawler({
+            requestQueue,
+            proxyConfiguration,
+            maxRequestsPerCrawl: input.maxRequestsPerCrawl,
+            maxConcurrency: 10,
+            maxRequestRetries: 2,
+            requestHandlerTimeoutSecs: 60,
+            navigationTimeoutSecs: 60,
+            requestHandler: router,
+            preNavigationHooks: [
+                async ({ request }) => {
+                    request.headers = { ...DEFAULT_HEADERS, ...request.headers };
+                },
+            ],
+        });
 
-    for (const { url } of input.startUrls) {
-        seedMap.set(url, { url, userData: { depth: 0 } });
-        if (input.includeHomepage) {
-            const home = getHomepageUrl(url);
-            if (!seedMap.has(home)) {
-                seedMap.set(home, { url: home, userData: { depth: 0 } });
+        /** @type {Map<string, { url: string, userData: { depth: number, crawlId: string } }>} */
+        const seedMap = new Map();
+
+        for (const { url } of input.startUrls) {
+            seedMap.set(url, { url, userData: { depth: 0, crawlId } });
+            if (input.includeHomepage) {
+                const home = getHomepageUrl(url);
+                if (!seedMap.has(home)) {
+                    seedMap.set(home, { url: home, userData: { depth: 0, crawlId } });
+                }
             }
         }
+
+        const seeds = [...seedMap.values()];
+
+        log.info('Bắt đầu thu thập link danh mục', {
+            startUrls: seeds.map((s) => s.url),
+            maxDepth: input.maxDepth,
+            maxCategoryLinks: input.maxCategoryLinks || 'không giới hạn',
+            maxRequestsPerCrawl: input.maxRequestsPerCrawl,
+        });
+
+        await crawler.run(seeds);
+
+        log.info(`Hoàn tất. Tổng link danh mục: ${crawlContext.items.length}`);
+
+        return { items: crawlContext.items, total: crawlContext.items.length };
+    } finally {
+        unregisterCrawlContext(crawlId);
     }
-
-    const seeds = [...seedMap.values()];
-
-    log.info('Bắt đầu thu thập link danh mục', {
-        startUrls: seeds.map((s) => s.url),
-        maxDepth: input.maxDepth,
-        maxCategoryLinks: input.maxCategoryLinks || 'không giới hạn',
-        maxRequestsPerCrawl: input.maxRequestsPerCrawl,
-    });
-
-    await crawler.run(seeds);
-
-    log.info(`Hoàn tất. Tổng link danh mục: ${items.length}`);
-
-    return { items, total: items.length };
 }

@@ -2,16 +2,17 @@ import { createServer } from 'node:http';
 
 import { log } from 'apify';
 
-import { getServerPort } from './loadEnv.js';
+import { getMaxConcurrentCrawls, getServerPort } from './loadEnv.js';
 import { runCategoryCrawl } from './runCrawl.js';
 
 const PORT = getServerPort();
+const MAX_CONCURRENT_CRAWLS = getMaxConcurrentCrawls();
 
 /** Endpoint chính — thu thập link danh mục */
 export const COLLECT_CATEGORY_LINKS_PATH = '/collect-category-links';
 
-/** @type {boolean} */
-let isBusy = false;
+/** @type {number} */
+let activeCrawls = 0;
 
 /**
  * @param {import('node:http').IncomingMessage} req
@@ -74,13 +75,22 @@ async function handleRequest(req, res) {
     }
 
     if (method === 'GET' && path === '/health') {
-        sendJson(res, 200, { ok: true, busy: isBusy });
+        sendJson(res, 200, {
+            ok: true,
+            activeCrawls,
+            maxConcurrentCrawls: MAX_CONCURRENT_CRAWLS || null,
+        });
         return;
     }
 
     if (method === 'POST' && path === COLLECT_CATEGORY_LINKS_PATH) {
-        if (isBusy) {
-            sendJson(res, 429, { success: false, error: 'Đang xử lý request khác, thử lại sau.' });
+        if (MAX_CONCURRENT_CRAWLS > 0 && activeCrawls >= MAX_CONCURRENT_CRAWLS) {
+            sendJson(res, 429, {
+                success: false,
+                error: `Server đang xử lý ${activeCrawls}/${MAX_CONCURRENT_CRAWLS} crawl song song. Thử lại sau.`,
+                activeCrawls,
+                maxConcurrentCrawls: MAX_CONCURRENT_CRAWLS,
+            });
             return;
         }
 
@@ -93,7 +103,7 @@ async function handleRequest(req, res) {
             return;
         }
 
-        isBusy = true;
+        activeCrawls += 1;
         try {
             const { items, total } = await runCategoryCrawl(rawInput);
             sendJson(res, 200, { success: true, total, items });
@@ -102,7 +112,7 @@ async function handleRequest(req, res) {
             log.error(`API ${COLLECT_CATEGORY_LINKS_PATH} lỗi`, { message });
             sendJson(res, 400, { success: false, error: message });
         } finally {
-            isBusy = false;
+            activeCrawls -= 1;
         }
         return;
     }
@@ -126,6 +136,7 @@ export function startApiServer() {
         server.listen(PORT, () => {
             log.info(`API đang lắng nghe http://0.0.0.0:${PORT}`, {
                 collectCategoryLinks: `POST http://127.0.0.1:${PORT}${COLLECT_CATEGORY_LINKS_PATH}`,
+                maxConcurrentCrawls: MAX_CONCURRENT_CRAWLS || 'không giới hạn',
             });
             resolve(server);
         });
